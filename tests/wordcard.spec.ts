@@ -63,6 +63,8 @@ test('메인 화면 — 카테고리가 모두 보인다', async ({ page }) => {
   await expect(page.getByRole('link', { name: /탈것/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /브랜드/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /꼬마버스 타요/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /숫자/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /동물/ })).toBeVisible();
 });
 
 // ──────────────────────────────────────────────
@@ -227,4 +229,14 @@ test('꼬마버스 타요 카테고리 — 20개 카드가 로드된다', async 
 test('브랜드 카테고리 — 9개 카드가 로드된다', async ({ page }) => {
   await page.goto('/brands');
   await expect(page.getByText(/1\s*\/\s*9/)).toBeVisible();
+});
+
+test('숫자 카테고리 — 10개 카드가 로드된다', async ({ page }) => {
+  await page.goto('/numbers');
+  await expect(page.getByText(/1\s*\/\s*10/)).toBeVisible();
+});
+
+test('동물 카테고리 — 16개 카드가 로드된다', async ({ page }) => {
+  await page.goto('/animals');
+  await expect(page.getByText(/1\s*\/\s*16/)).toBeVisible();
 });

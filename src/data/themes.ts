@@ -39,6 +39,22 @@ export const CATEGORY_THEMES = {
     shadow: '#1068A8',
     progressFill: '#3AA8F0',
   },
+  numbers: {
+    gradient: 'linear-gradient(160deg, #FAF5FF 0%, #EDE0FF 100%)',
+    cardBg: '#E4D0FF',
+    accent: '#7C3AED',
+    dark: '#3B1A8A',
+    shadow: '#5B28C8',
+    progressFill: '#9B6AF0',
+  },
+  animals: {
+    gradient: 'linear-gradient(160deg, #F4FBE8 0%, #E0F5C0 100%)',
+    cardBg: '#D0EEA0',
+    accent: '#6AAA20',
+    dark: '#2E5A08',
+    shadow: '#4A8010',
+    progressFill: '#80CC30',
+  },
 } as const;
 
 export type ThemeKey = keyof typeof CATEGORY_THEMES;
