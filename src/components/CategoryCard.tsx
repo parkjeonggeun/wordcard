@@ -12,34 +12,34 @@ interface CategoryCardProps {
 
 function CategoryCard({ category, index = 0 }: CategoryCardProps) {
   const theme = getTheme(category.id);
-  const delay = `${index * 0.08}s`;
+  const delay = `${index * 0.06}s`;
 
   return (
-    <Link href={`/${category.id}`} className="block" aria-label={`${category.nameKo} 카드 시작`}>
+    <Link href={`/${category.id}`} className="block h-full" aria-label={`${category.nameKo} 카드 시작`}>
       <div
-        className="card-entrance flex flex-col items-center justify-center gap-4 py-8 px-3 rounded-[28px] aspect-[3/4] transition-transform duration-75 active:scale-95 select-none touch-manipulation cursor-pointer"
+        className="card-entrance h-full flex flex-col items-center justify-center gap-2 px-2 rounded-[22px] transition-transform duration-75 active:scale-95 select-none touch-manipulation cursor-pointer"
         style={{
           background: theme.cardBg,
-          boxShadow: `0 8px 0 ${theme.shadow}, 0 12px 28px rgba(0,0,0,0.10)`,
+          boxShadow: `0 6px 0 ${theme.shadow}, 0 10px 20px rgba(0,0,0,0.10)`,
           animationDelay: delay,
           opacity: 0,
         }}
       >
         {/* Emoji in white circle */}
         <div
-          className="flex items-center justify-center rounded-full"
+          className="flex items-center justify-center rounded-full flex-shrink-0"
           style={{
-            width: 'clamp(72px, 18vw, 110px)',
-            height: 'clamp(72px, 18vw, 110px)',
+            width: 'clamp(52px, 12vw, 84px)',
+            height: 'clamp(52px, 12vw, 84px)',
             background: 'rgba(255,255,255,0.85)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            boxShadow: '0 3px 8px rgba(0,0,0,0.08)',
           }}
         >
           <span
             style={{
-              fontSize: 'clamp(40px, 10vw, 66px)',
+              fontSize: 'clamp(28px, 7vw, 50px)',
               lineHeight: 1,
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+              filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.1))',
             }}
             role="img"
             aria-label={category.nameKo}
@@ -49,16 +49,16 @@ function CategoryCard({ category, index = 0 }: CategoryCardProps) {
         </div>
 
         {/* Labels */}
-        <div className="text-center">
+        <div className="text-center px-1">
           <p
-            className="font-black leading-none"
-            style={{ fontSize: 'clamp(18px, 5vw, 34px)', color: theme.dark }}
+            className="font-black leading-tight"
+            style={{ fontSize: 'clamp(12px, 3.2vw, 22px)', color: theme.dark }}
           >
             {category.nameKo}
           </p>
           <p
-            className="font-bold mt-1"
-            style={{ fontSize: 'clamp(12px, 2.5vw, 16px)', color: theme.accent }}
+            className="font-bold mt-0.5"
+            style={{ fontSize: 'clamp(10px, 2vw, 13px)', color: theme.accent }}
           >
             {category.cards.length}개
           </p>
