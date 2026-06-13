@@ -16,25 +16,68 @@ export function preloadVoices(): void {
   }, { once: true });
 }
 
+// iOS/macOS에서 품질 좋고 밝은 영어 음성 우선순위
+const PREFERRED_EN_VOICES = [
+  'Samantha',   // iOS 기본 여성 영어 음성 — 가장 자연스럽고 밝음
+  'Karen',      // iOS 호주 영어
+  'Moira',      // iOS 아일랜드 영어
+  'Tessa',      // iOS 남아공 영어
+  'Fiona',      // iOS 스코틀랜드 영어
+  'Victoria',   // macOS
+  'Allison',    // macOS
+  'Ava',        // macOS
+];
+
 function getBestVoice(lang: TTSLang): SpeechSynthesisVoice | null {
   if (voiceCache.has(lang)) return voiceCache.get(lang)!;
 
   const voices = window.speechSynthesis.getVoices();
-  const result =
+  if (!voices.length) return null;
+
+  let result: SpeechSynthesisVoice | undefined;
+
+  if (lang === 'en-US') {
+    // 1. 선호 음성 목록에서 compact가 아닌 것 우선
+    for (const name of PREFERRED_EN_VOICES) {
+      result = voices.find(
+        (v) => v.name.includes(name) && !v.name.toLowerCase().includes('compact')
+      );
+      if (result) break;
+    }
+    // 2. 선호 목록 중 compact 포함 fallback
+    if (!result) {
+      for (const name of PREFERRED_EN_VOICES) {
+        result = voices.find((v) => v.name.includes(name));
+        if (result) break;
+      }
+    }
+  }
+
+  // 공통 fallback: 언어 코드 매칭
+  result ??=
     voices.find((v) => v.lang === lang && !v.name.toLowerCase().includes('compact')) ??
     voices.find((v) => v.lang === lang) ??
     voices.find((v) => v.lang.startsWith(lang.split('-')[0])) ??
-    null;
+    undefined;
 
-  voiceCache.set(lang, result);
-  return result;
+  voiceCache.set(lang, result ?? null);
+  return result ?? null;
 }
+
+// 언어별 발화 파라미터
+const VOICE_PARAMS: Record<TTSLang, { rate: number; pitch: number; volume: number }> = {
+  'ko-KR': { rate: 0.85, pitch: 1.1,  volume: 1.0 },
+  // 영어: pitch를 높여 밝고 명랑한 소리로, rate 살짝 올려 또렷하게
+  'en-US': { rate: 0.9,  pitch: 1.35, volume: 1.0 },
+};
 
 function makeUtterance(text: string, lang: TTSLang): SpeechSynthesisUtterance {
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang;
-  u.rate = 0.85;
-  u.pitch = 1.05;
+  const { rate, pitch, volume } = VOICE_PARAMS[lang];
+  u.lang   = lang;
+  u.rate   = rate;
+  u.pitch  = pitch;
+  u.volume = volume;
   const voice = getBestVoice(lang);
   if (voice) u.voice = voice;
   return u;
@@ -43,8 +86,6 @@ function makeUtterance(text: string, lang: TTSLang): SpeechSynthesisUtterance {
 export function speak(text: string, lang: TTSLang): void {
   if (typeof window === 'undefined' || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  // Try synchronously first (respects iOS gesture context).
-  // If it fails silently, the 80ms fallback catches it.
   const u = makeUtterance(text, lang);
   try {
     window.speechSynthesis.speak(u);
