@@ -4,9 +4,8 @@ import { useState, useCallback, useEffect, useRef, memo } from 'react';
 import type { CardItem, Category } from '@/types';
 import PlaceholderImage from './PlaceholderImage';
 import CelebrationOverlay, { getRandomMessage } from './CelebrationOverlay';
-import ProgressBar from './ProgressBar';
-import IconButton from './IconButton';
 import { useTTS } from '@/hooks/useTTS';
+import { getTheme } from '@/data/themes';
 
 interface WordCardProps {
   cards: CardItem[];
@@ -18,8 +17,9 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
   const [index, setIndex] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
   const [celebrationMsg, setCelebrationMsg] = useState('');
-  const celebratingRef = useRef(false); // BUG-08: immediate guard against fast taps
+  const celebratingRef = useRef(false);
   const { speak, speakSequence, cancel } = useTTS();
+  const theme = getTheme(category.id);
 
   const card = cards[index];
   const total = cards.length;
@@ -36,7 +36,7 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
   }, [cancel, total]);
 
   const handleCorrect = useCallback(() => {
-    if (celebratingRef.current) return; // BUG-08: useRef guard for fast taps
+    if (celebratingRef.current) return;
     celebratingRef.current = true;
     setCelebrationMsg(getRandomMessage());
     setCelebrating(true);
@@ -48,12 +48,10 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
     setCelebrating(false);
   }, []);
 
-  // Cancel TTS (including pending timers) when card changes (BUG-10)
   useEffect(() => {
     return () => { cancel(); };
   }, [index, cancel]);
 
-  // Preload next card image via <link rel="preload"> (BUG-05)
   useEffect(() => {
     if (!nextCard) return;
     const link = document.createElement('link');
@@ -66,57 +64,196 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
 
   return (
     <div className="flex flex-col h-full min-h-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      {/* Header — BUG-14: calc() merges safe-area + fixed padding */}
+
+      {/* Header */}
       <div
-        className="flex items-center justify-between px-4 pb-2 shrink-0"
+        className="flex items-center justify-between px-5 pb-3 shrink-0"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
       >
-        <IconButton
+        {/* Home button */}
+        <button
+          type="button"
           onClick={onHome}
-          label="홈으로"
-          icon="🏠"
-          className="w-14 bg-gray-100 active:bg-gray-200"
-        />
-        <div className="flex flex-col items-center">
-          <span className="text-xl font-black text-gray-700">{category.nameKo}</span>
-          <span className="text-gray-400 text-sm font-semibold">{index + 1} / {total}</span>
+          aria-label="홈으로"
+          className="w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-transform duration-75 active:scale-90 touch-manipulation select-none"
+          style={{
+            background: 'rgba(255,255,255,0.92)',
+            boxShadow: '0 4px 0 rgba(0,0,0,0.10), 0 6px 16px rgba(0,0,0,0.06)',
+          }}
+        >
+          🏠
+        </button>
+
+        {/* Category label */}
+        <div className="flex flex-col items-center select-none">
+          <span className="font-black" style={{ fontSize: 'clamp(18px, 4.5vw, 28px)', color: theme.dark }}>
+            {category.emoji} {category.nameKo}
+          </span>
         </div>
-        <div className="w-14" aria-hidden="true" />
+
+        {/* Counter badge */}
+        <div
+          className="w-14 h-14 rounded-full flex items-center justify-center font-black select-none"
+          style={{
+            background: 'rgba(255,255,255,0.75)',
+            color: theme.dark,
+            fontSize: 'clamp(11px, 2.5vw, 15px)',
+          }}
+        >
+          {index + 1}/{total}
+        </div>
       </div>
 
-      {/* Progress */}
-      <div className="px-4 shrink-0">
-        <ProgressBar current={index + 1} total={total} fillClass={category.bgColor} />
+      {/* Progress dots */}
+      <div
+        className="px-5 pb-3 shrink-0"
+        role="progressbar"
+        aria-valuenow={index + 1}
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuetext={`${index + 1}번째 카드, 총 ${total}개`}
+      >
+        <div className="flex gap-1.5 justify-center flex-wrap">
+          {Array.from({ length: total }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === index ? 22 : 9,
+                height: 9,
+                background: i < index
+                  ? theme.progressFill
+                  : i === index
+                  ? theme.accent
+                  : 'rgba(255,255,255,0.55)',
+                boxShadow: i <= index ? `0 1px 3px ${theme.shadow}44` : 'none',
+              }}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Image area */}
-      <div className="flex-1 min-h-0 px-4 py-3">
-        <div className={`w-full h-full rounded-3xl overflow-hidden border-4 ${category.borderColor} shadow-lg ${category.bgColor}`}>
+      {/* Image card — white card with soft shadow */}
+      <div className="flex-1 min-h-0 px-5 pb-3">
+        <div
+          className="w-full h-full rounded-[28px] overflow-hidden"
+          style={{
+            background: 'white',
+            boxShadow: `0 6px 0 ${theme.shadow}30, 0 12px 32px rgba(0,0,0,0.10)`,
+          }}
+        >
           <PlaceholderImage
             src={card.imagePath}
             alt={card.nameKo}
             emoji={card.emoji}
-            bgColor={category.bgColor}
+            bgColor="bg-white"
             priority={true}
           />
         </div>
       </div>
 
-      {/* Word label */}
-      <div className="text-center px-4 shrink-0 pb-1">
-        <p className="font-black text-gray-800" style={{ fontSize: 'clamp(28px, 6vw, 52px)' }}>
+      {/* Word labels */}
+      <div className="text-center px-5 shrink-0 pb-3">
+        <p
+          className="font-black leading-tight select-none"
+          style={{ fontSize: 'clamp(32px, 7.5vw, 60px)', color: '#1A1A2E' }}
+        >
           {card.nameKo}
         </p>
-        <p className="text-gray-400 font-semibold text-lg">{card.nameEn}</p>
+        <p
+          className="font-semibold select-none"
+          style={{ fontSize: 'clamp(15px, 3.5vw, 24px)', color: '#9090A8' }}
+        >
+          {card.nameEn}
+        </p>
       </div>
 
-      {/* Controls */}
-      <div className="px-4 pb-4 shrink-0 grid grid-cols-5 gap-2">
-        <IconButton onClick={goPrev}  label="이전 카드"  icon="◀"   className="col-span-1 bg-gray-100" />
-        <IconButton onClick={() => speak(card.nameKo, 'ko-KR')} label="한국어 듣기" icon="🔊" subLabel="한국어" className="col-span-1 bg-sky-100 border-2 border-sky-300 text-sky-700" />
-        <IconButton onClick={handleCorrect} label="정답" icon="⭐" subLabel="정답!" className="col-span-1 bg-yellow-300 border-2 border-yellow-400 text-yellow-800 shadow-md" />
-        <IconButton onClick={() => speak(card.nameEn, 'en-US')} label="영어 듣기" icon="🔊" subLabel="English" className="col-span-1 bg-purple-100 border-2 border-purple-300 text-purple-700" />
-        <IconButton onClick={goNext}  label="다음 카드"  icon="▶"   className="col-span-1 bg-gray-100" />
+      {/* Control buttons */}
+      <div className="px-4 pb-5 shrink-0 flex items-center justify-center gap-2">
+
+        {/* Previous */}
+        <button
+          type="button"
+          onClick={goPrev}
+          aria-label="이전 카드"
+          className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-transform duration-75 active:scale-90 touch-manipulation select-none font-black"
+          style={{
+            background: 'white',
+            color: '#9090A8',
+            boxShadow: '0 4px 0 #B8BCC8, 0 6px 16px rgba(0,0,0,0.08)',
+          }}
+        >
+          ◀
+        </button>
+
+        {/* Korean TTS */}
+        <button
+          type="button"
+          onClick={() => speak(card.nameKo, 'ko-KR')}
+          aria-label="한국어 듣기"
+          className="flex flex-col items-center justify-center h-16 px-4 rounded-2xl font-black transition-transform duration-75 active:scale-90 touch-manipulation select-none"
+          style={{
+            background: '#FFE4DC',
+            color: theme.dark,
+            boxShadow: `0 4px 0 ${theme.shadow}AA, 0 6px 16px rgba(200,100,80,0.14)`,
+            minWidth: '3.8rem',
+            fontSize: 'clamp(10px, 2.2vw, 14px)',
+          }}
+        >
+          <span className="text-xl mb-0.5">🔊</span>
+          <span>한국어</span>
+        </button>
+
+        {/* Correct / Star — biggest button */}
+        <button
+          type="button"
+          onClick={handleCorrect}
+          aria-label="정답"
+          className="flex flex-col items-center justify-center h-16 px-5 rounded-2xl font-black transition-transform duration-75 active:scale-90 touch-manipulation select-none"
+          style={{
+            background: '#FFE566',
+            color: '#6A4800',
+            boxShadow: '0 5px 0 #C8A010, 0 8px 22px rgba(200,160,16,0.28)',
+            minWidth: '4.5rem',
+            fontSize: 'clamp(10px, 2.2vw, 14px)',
+          }}
+        >
+          <span className="text-2xl mb-0.5">⭐</span>
+          <span>정답!</span>
+        </button>
+
+        {/* English TTS */}
+        <button
+          type="button"
+          onClick={() => speak(card.nameEn, 'en-US')}
+          aria-label="영어 듣기"
+          className="flex flex-col items-center justify-center h-16 px-4 rounded-2xl font-black transition-transform duration-75 active:scale-90 touch-manipulation select-none"
+          style={{
+            background: '#E8E0FF',
+            color: '#38208A',
+            boxShadow: '0 4px 0 #9080C8AA, 0 6px 16px rgba(140,120,200,0.14)',
+            minWidth: '3.8rem',
+            fontSize: 'clamp(10px, 2.2vw, 14px)',
+          }}
+        >
+          <span className="text-xl mb-0.5">🔊</span>
+          <span>English</span>
+        </button>
+
+        {/* Next */}
+        <button
+          type="button"
+          onClick={goNext}
+          aria-label="다음 카드"
+          className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-transform duration-75 active:scale-90 touch-manipulation select-none font-black"
+          style={{
+            background: 'white',
+            color: '#9090A8',
+            boxShadow: '0 4px 0 #B8BCC8, 0 6px 16px rgba(0,0,0,0.08)',
+          }}
+        >
+          ▶
+        </button>
       </div>
 
       {celebrating && (

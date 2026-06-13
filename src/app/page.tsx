@@ -3,21 +3,38 @@ import { categories } from '@/data/cards';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-sky-100 to-blue-50 flex flex-col items-center justify-center px-6 py-8 pt-safe pb-safe">
+    <main
+      className="min-h-screen flex flex-col items-center justify-center px-5 py-8 pt-safe pb-safe"
+      style={{ background: 'linear-gradient(160deg, #FFF9F0 0%, #FFF4E6 50%, #FFEEDD 100%)' }}
+    >
       <div className="w-full max-w-2xl">
+        {/* App header */}
         <div className="text-center mb-10">
-          <h1
-            className="font-black text-gray-800 leading-tight"
-            style={{ fontSize: 'clamp(34px, 7.5vw, 60px)' }}
+          <div
+            className="text-8xl mb-3 select-none"
+            style={{ filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.12))', lineHeight: 1 }}
+            aria-hidden="true"
           >
-            낱말 카드 🃏
+            🌈
+          </div>
+          <h1
+            className="font-black leading-none"
+            style={{ fontSize: 'clamp(40px, 10vw, 72px)', color: '#5A3410' }}
+          >
+            낱말 카드
           </h1>
-          <p className="text-gray-500 text-lg mt-2">카드를 골라봐요!</p>
+          <p
+            className="font-bold mt-3"
+            style={{ fontSize: 'clamp(16px, 4vw, 22px)', color: '#C87040' }}
+          >
+            카드를 골라봐요! 🎯
+          </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 sm:gap-6">
-          {categories.map((cat) => (
-            <CategoryCard key={cat.id} category={cat} />
+        {/* Category grid */}
+        <div className="grid grid-cols-3 gap-5 sm:gap-7">
+          {categories.map((cat, i) => (
+            <CategoryCard key={cat.id} category={cat} index={i} />
           ))}
         </div>
       </div>
