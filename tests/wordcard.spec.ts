@@ -55,12 +55,14 @@ test.beforeEach(async ({ page }) => {
 // ──────────────────────────────────────────────
 // 1. 메인 화면 진입
 // ──────────────────────────────────────────────
-test('메인 화면 — 카테고리 3개가 보인다', async ({ page }) => {
+test('메인 화면 — 카테고리가 모두 보인다', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('낱말 카드')).toBeVisible();
   await expect(page.getByRole('link', { name: /과일/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /채소/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /탈것/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /브랜드/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /꼬마버스 타요/ })).toBeVisible();
 });
 
 // ──────────────────────────────────────────────
@@ -215,4 +217,14 @@ test('잘못된 카테고리 URL — 오류 메시지와 홈 버튼이 표시된
   await page.goto('/unknown-category');
   await expect(page.getByText(/찾을 수 없어요/)).toBeVisible();
   await expect(page.getByRole('button', { name: '홈으로' })).toBeVisible();
+});
+
+test('꼬마버스 타요 카테고리 — 20개 카드가 로드된다', async ({ page }) => {
+  await page.goto('/tayo');
+  await expect(page.getByText(/1\s*\/\s*20/)).toBeVisible();
+});
+
+test('브랜드 카테고리 — 9개 카드가 로드된다', async ({ page }) => {
+  await page.goto('/brands');
+  await expect(page.getByText(/1\s*\/\s*9/)).toBeVisible();
 });

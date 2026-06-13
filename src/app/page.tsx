@@ -32,7 +32,7 @@ export default function Home() {
         </div>
 
         {/* Category grid */}
-        <div className="grid grid-cols-3 gap-5 sm:gap-7">
+        <div className="grid grid-cols-2 gap-5 sm:gap-7">
           {categories.map((cat, i) => (
             <CategoryCard key={cat.id} category={cat} index={i} />
           ))}

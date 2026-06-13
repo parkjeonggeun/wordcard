@@ -23,6 +23,22 @@ export const CATEGORY_THEMES = {
     shadow: '#3A58C8',
     progressFill: '#6B92F0',
   },
+  brands: {
+    gradient: 'linear-gradient(160deg, #FDF8FF 0%, #F0E8FF 100%)',
+    cardBg: '#EAD8FF',
+    accent: '#8B40E8',
+    dark: '#4A1890',
+    shadow: '#6A28C8',
+    progressFill: '#9B58F0',
+  },
+  tayo: {
+    gradient: 'linear-gradient(160deg, #EFF8FF 0%, #CCEEFF 100%)',
+    cardBg: '#C0E8FF',
+    accent: '#1A8FD8',
+    dark: '#0A4A80',
+    shadow: '#1068A8',
+    progressFill: '#3AA8F0',
+  },
 } as const;
 
 export type ThemeKey = keyof typeof CATEGORY_THEMES;
