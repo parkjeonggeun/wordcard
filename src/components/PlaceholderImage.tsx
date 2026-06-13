@@ -16,10 +16,10 @@ function PlaceholderImage({ src, alt, emoji, bgColor = 'bg-white', priority = fa
 
   if (hasError) {
     return (
-      <div className={`w-full h-full flex items-center justify-center ${bgColor} rounded-3xl`}>
+      <div className={`w-full h-full flex items-center justify-center ${bgColor}`}>
         <span
           className="select-none"
-          style={{ fontSize: 'clamp(100px, 25vw, 240px)', lineHeight: 1 }}
+          style={{ fontSize: 'clamp(100px, 22vw, 220px)', lineHeight: 1 }}
           role="img"
           aria-label={alt}
         >
@@ -30,16 +30,22 @@ function PlaceholderImage({ src, alt, emoji, bgColor = 'bg-white', priority = fa
   }
 
   return (
-    <div className={`relative w-full h-full ${bgColor} rounded-3xl overflow-hidden`}>
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes="(max-width: 768px) 90vw, 60vw"
-        className="object-contain p-6"
-        onError={() => setHasError(true)}
-        priority={priority}
-      />
+    // Outer: fills card container
+    <div className="relative w-full h-full">
+      {/* Padding wrapper — keeps image away from card border without fighting fill's inset */}
+      <div className="absolute inset-5">
+        <div className="relative w-full h-full">
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes="(max-width: 768px) 80vw, 55vw"
+            className="object-contain"
+            onError={() => setHasError(true)}
+            priority={priority}
+          />
+        </div>
+      </div>
     </div>
   );
 }

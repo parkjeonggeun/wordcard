@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className={`${notoSansKR.className} min-h-screen`}>{children}</body>
+      <body className={notoSansKR.className}>{children}</body>
     </html>
   );
 }
