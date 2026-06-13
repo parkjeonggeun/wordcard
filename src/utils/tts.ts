@@ -94,6 +94,25 @@ export function speak(text: string, lang: TTSLang): void {
   }
 }
 
+// Korean only — used by useTTS when English is handled separately (ElevenLabs)
+export function speakKoreanOnly(koText: string, initialDelayMs = 600): () => void {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return () => {};
+
+  window.speechSynthesis.cancel();
+  let cancelled = false;
+
+  const timer = setTimeout(() => {
+    if (cancelled) return;
+    window.speechSynthesis.speak(makeUtterance(koText, 'ko-KR'));
+  }, initialDelayMs);
+
+  return () => {
+    cancelled = true;
+    clearTimeout(timer);
+    window.speechSynthesis.cancel();
+  };
+}
+
 // Returns a cancel function that stops both timers and the utterance.
 export function speakSequence(
   koText: string,
