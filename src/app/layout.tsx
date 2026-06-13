@@ -13,15 +13,15 @@ export const metadata: Metadata = {
   title: '낱말카드',
   description: '아이와 함께하는 한국어·영어 낱말 카드 놀이',
   manifest: '/manifest.json',
+  // BUG-11: appleWebApp generates the apple-mobile-web-app-* tags automatically.
+  // Removed duplicate declarations from `other`.
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: '낱말카드',
   },
   other: {
-    'mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'default',
+    'mobile-web-app-capable': 'yes', // Chrome Android only
   },
 };
 
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" className={notoSansKR.variable}>
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
       </head>
       <body className={notoSansKR.className}>{children}</body>
     </html>

@@ -18,6 +18,7 @@ function IconButton({ onClick, label, icon, subLabel, className = '', size = 'md
 
   return (
     <button
+      type="button"           // BUG-13: explicit type prevents accidental form submit
       onClick={onClick}
       aria-label={label}
       className={`

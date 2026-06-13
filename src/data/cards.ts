@@ -59,7 +59,7 @@ export const categories: Category[] = [
       { id: 'helicopter', nameKo: '헬리콥터', nameEn: 'Helicopter', emoji: '🚁', imagePath: '/images/vehicles/helicopter.png' },
       { id: 'ship',       nameKo: '배',       nameEn: 'Ship',       emoji: '🚢', imagePath: '/images/vehicles/ship.png' },
       { id: 'bicycle',    nameKo: '자전거',   nameEn: 'Bicycle',    emoji: '🚲', imagePath: '/images/vehicles/bicycle.png' },
-      { id: 'excavator',  nameKo: '굴착기',   nameEn: 'Excavator',  emoji: '🚜', imagePath: '/images/vehicles/excavator.png' },
+      { id: 'excavator',  nameKo: '굴착기',   nameEn: 'Excavator',  emoji: '🏗️', imagePath: '/images/vehicles/excavator.png' },
       { id: 'dumptruck',  nameKo: '덤프트럭', nameEn: 'Dump Truck', emoji: '🚛', imagePath: '/images/vehicles/dumptruck.png' },
       { id: 'tractor',    nameKo: '트랙터',   nameEn: 'Tractor',    emoji: '🚜', imagePath: '/images/vehicles/tractor.png' },
     ],

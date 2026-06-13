@@ -40,28 +40,31 @@ interface CelebrationOverlayProps {
 }
 
 function CelebrationOverlay({ message, onDone }: CelebrationOverlayProps) {
-  const hasRun = useRef(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
   const particles = useRef<Particle[]>(generateParticles());
 
+  // BUG-09: mount-once effect, capture onDone via ref
   useEffect(() => {
-    if (hasRun.current) return;
-    hasRun.current = true;
-
     playSuccessSound();
-
-    const timer = setTimeout(onDone, 3000);
+    const timer = setTimeout(() => onDoneRef.current(), 3000);
     return () => clearTimeout(timer);
-  }, [onDone]);
+  }, []);
+
+  const handleClose = () => onDoneRef.current();
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm"
-      onClick={onDone}
+      onClick={handleClose}
+      onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') handleClose(); }}
       role="dialog"
       aria-label="정답 축하"
+      aria-modal="true"
+      tabIndex={0}
     >
       {/* Confetti particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
         {particles.current.map((p) => (
           <div
             key={p.id}
@@ -81,7 +84,7 @@ function CelebrationOverlay({ message, onDone }: CelebrationOverlayProps) {
 
       {/* Message card */}
       <div className="relative bg-white rounded-4xl shadow-2xl px-10 py-8 flex flex-col items-center gap-3 max-w-xs mx-4 celebrate-card">
-        <div className="text-7xl star-spin">⭐</div>
+        <div className="text-7xl star-spin" aria-hidden="true">⭐</div>
         <p className="text-4xl font-black text-center text-gray-800 leading-tight">
           {message}
         </p>

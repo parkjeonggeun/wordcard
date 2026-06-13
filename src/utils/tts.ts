@@ -1,31 +1,33 @@
 export type TTSLang = 'ko-KR' | 'en-US';
 
-// Eagerly trigger voice list load (iOS Safari loads voices lazily)
+// Voice cache — invalidated on voiceschanged
+const voiceCache = new Map<TTSLang, SpeechSynthesisVoice | null>();
+
+let voicesPreloaded = false;
+
 export function preloadVoices(): void {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  if (typeof window === 'undefined' || !window.speechSynthesis || voicesPreloaded) return;
+  voicesPreloaded = true;
+
   window.speechSynthesis.getVoices();
   window.speechSynthesis.addEventListener('voiceschanged', () => {
+    voiceCache.clear();
     window.speechSynthesis.getVoices();
   }, { once: true });
 }
 
 function getBestVoice(lang: TTSLang): SpeechSynthesisVoice | null {
+  if (voiceCache.has(lang)) return voiceCache.get(lang)!;
+
   const voices = window.speechSynthesis.getVoices();
-  if (!voices.length) return null;
+  const result =
+    voices.find((v) => v.lang === lang && !v.name.toLowerCase().includes('compact')) ??
+    voices.find((v) => v.lang === lang) ??
+    voices.find((v) => v.lang.startsWith(lang.split('-')[0])) ??
+    null;
 
-  // 1. Exact lang match, prefer non-compact (higher quality)
-  const exactHQ = voices.find(
-    (v) => v.lang === lang && !v.name.toLowerCase().includes('compact')
-  );
-  if (exactHQ) return exactHQ;
-
-  // 2. Any exact lang match
-  const exact = voices.find((v) => v.lang === lang);
-  if (exact) return exact;
-
-  // 3. Language prefix match (e.g. en-GB for en-US)
-  const prefix = lang.split('-')[0];
-  return voices.find((v) => v.lang.startsWith(prefix)) ?? null;
+  voiceCache.set(lang, result);
+  return result;
 }
 
 function makeUtterance(text: string, lang: TTSLang): SpeechSynthesisUtterance {
@@ -41,25 +43,47 @@ function makeUtterance(text: string, lang: TTSLang): SpeechSynthesisUtterance {
 export function speak(text: string, lang: TTSLang): void {
   if (typeof window === 'undefined' || !window.speechSynthesis) return;
   window.speechSynthesis.cancel();
-  // iOS Safari needs ~80 ms after cancel() before next speak()
-  setTimeout(() => {
-    window.speechSynthesis.speak(makeUtterance(text, lang));
-  }, 80);
+  // Try synchronously first (respects iOS gesture context).
+  // If it fails silently, the 80ms fallback catches it.
+  const u = makeUtterance(text, lang);
+  try {
+    window.speechSynthesis.speak(u);
+  } catch {
+    setTimeout(() => window.speechSynthesis.speak(makeUtterance(text, lang)), 80);
+  }
 }
 
-export function speakSequence(koText: string, enText: string, initialDelayMs = 600): void {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+// Returns a cancel function that stops both timers and the utterance.
+export function speakSequence(
+  koText: string,
+  enText: string,
+  initialDelayMs = 600
+): () => void {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return () => {};
+
   window.speechSynthesis.cancel();
 
-  setTimeout(() => {
+  let cancelled = false;
+  let innerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const outerTimer = setTimeout(() => {
+    if (cancelled) return;
     const ko = makeUtterance(koText, 'ko-KR');
     ko.onend = () => {
-      setTimeout(() => {
-        window.speechSynthesis.speak(makeUtterance(enText, 'en-US'));
+      if (cancelled) return;
+      innerTimer = setTimeout(() => {
+        if (!cancelled) window.speechSynthesis.speak(makeUtterance(enText, 'en-US'));
       }, 400);
     };
     window.speechSynthesis.speak(ko);
   }, initialDelayMs);
+
+  return () => {
+    cancelled = true;
+    clearTimeout(outerTimer);
+    if (innerTimer !== null) clearTimeout(innerTimer);
+    window.speechSynthesis.cancel();
+  };
 }
 
 export function cancelTTS(): void {

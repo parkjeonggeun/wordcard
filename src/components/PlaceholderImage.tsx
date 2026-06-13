@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 
 interface PlaceholderImageProps {
   src: string;
@@ -13,6 +13,11 @@ interface PlaceholderImageProps {
 
 function PlaceholderImage({ src, alt, emoji, bgColor = 'bg-white', priority = false }: PlaceholderImageProps) {
   const [hasError, setHasError] = useState(false);
+
+  // Reset error state when src changes (BUG-06)
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
 
   if (hasError) {
     return (
@@ -30,9 +35,8 @@ function PlaceholderImage({ src, alt, emoji, bgColor = 'bg-white', priority = fa
   }
 
   return (
-    // Outer: fills card container
     <div className="relative w-full h-full">
-      {/* Padding wrapper — keeps image away from card border without fighting fill's inset */}
+      {/* Padding wrapper — avoids p-6 on fill Image which conflicts with inset:0 */}
       <div className="absolute inset-5">
         <div className="relative w-full h-full">
           <Image

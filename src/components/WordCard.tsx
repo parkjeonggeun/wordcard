@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, memo } from 'react';
-import Image from 'next/image';
+import { useState, useCallback, useEffect, useRef, memo } from 'react';
 import type { CardItem, Category } from '@/types';
 import PlaceholderImage from './PlaceholderImage';
 import CelebrationOverlay, { getRandomMessage } from './CelebrationOverlay';
@@ -19,6 +18,7 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
   const [index, setIndex] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
   const [celebrationMsg, setCelebrationMsg] = useState('');
+  const celebratingRef = useRef(false); // BUG-08: immediate guard against fast taps
   const { speak, speakSequence, cancel } = useTTS();
 
   const card = cards[index];
@@ -36,25 +36,41 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
   }, [cancel, total]);
 
   const handleCorrect = useCallback(() => {
-    if (celebrating) return;
+    if (celebratingRef.current) return; // BUG-08: useRef guard for fast taps
+    celebratingRef.current = true;
     setCelebrationMsg(getRandomMessage());
     setCelebrating(true);
     speakSequence(card.nameKo, card.nameEn, 600);
-  }, [celebrating, card, speakSequence]);
+  }, [card, speakSequence]);
 
   const handleCelebrationDone = useCallback(() => {
+    celebratingRef.current = false;
     setCelebrating(false);
   }, []);
 
-  // Cancel TTS when card changes
+  // Cancel TTS (including pending timers) when card changes (BUG-10)
   useEffect(() => {
     return () => { cancel(); };
   }, [index, cancel]);
 
+  // Preload next card image via <link rel="preload"> (BUG-05)
+  useEffect(() => {
+    if (!nextCard) return;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = nextCard.imagePath;
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, [nextCard]);
+
   return (
-    <div className="flex flex-col h-full min-h-0 pb-safe">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-safe pt-4 pb-2 shrink-0">
+    <div className="flex flex-col h-full min-h-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      {/* Header — BUG-14: calc() merges safe-area + fixed padding */}
+      <div
+        className="flex items-center justify-between px-4 pb-2 shrink-0"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+      >
         <IconButton
           onClick={onHome}
           label="홈으로"
@@ -86,19 +102,6 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
         </div>
       </div>
 
-      {/* Preload next image (hidden) */}
-      {nextCard && (
-        <div className="hidden" aria-hidden="true">
-          <Image
-            src={nextCard.imagePath}
-            alt=""
-            width={1}
-            height={1}
-            priority={false}
-          />
-        </div>
-      )}
-
       {/* Word label */}
       <div className="text-center px-4 shrink-0 pb-1">
         <p className="font-black text-gray-800" style={{ fontSize: 'clamp(28px, 6vw, 52px)' }}>
@@ -109,50 +112,15 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
 
       {/* Controls */}
       <div className="px-4 pb-4 shrink-0 grid grid-cols-5 gap-2">
-        <IconButton
-          onClick={goPrev}
-          label="이전 카드"
-          icon="◀"
-          className="col-span-1 bg-gray-100"
-        />
-
-        <IconButton
-          onClick={() => speak(card.nameKo, 'ko-KR')}
-          label="한국어 듣기"
-          icon="🔊"
-          subLabel="한국어"
-          className="col-span-1 bg-sky-100 border-2 border-sky-300 text-sky-700"
-        />
-
-        <IconButton
-          onClick={handleCorrect}
-          label="정답"
-          icon="⭐"
-          subLabel="정답!"
-          className="col-span-1 bg-yellow-300 border-2 border-yellow-400 text-yellow-800 shadow-md"
-        />
-
-        <IconButton
-          onClick={() => speak(card.nameEn, 'en-US')}
-          label="영어 듣기"
-          icon="🔊"
-          subLabel="English"
-          className="col-span-1 bg-purple-100 border-2 border-purple-300 text-purple-700"
-        />
-
-        <IconButton
-          onClick={goNext}
-          label="다음 카드"
-          icon="▶"
-          className="col-span-1 bg-gray-100"
-        />
+        <IconButton onClick={goPrev}  label="이전 카드"  icon="◀"   className="col-span-1 bg-gray-100" />
+        <IconButton onClick={() => speak(card.nameKo, 'ko-KR')} label="한국어 듣기" icon="🔊" subLabel="한국어" className="col-span-1 bg-sky-100 border-2 border-sky-300 text-sky-700" />
+        <IconButton onClick={handleCorrect} label="정답" icon="⭐" subLabel="정답!" className="col-span-1 bg-yellow-300 border-2 border-yellow-400 text-yellow-800 shadow-md" />
+        <IconButton onClick={() => speak(card.nameEn, 'en-US')} label="영어 듣기" icon="🔊" subLabel="English" className="col-span-1 bg-purple-100 border-2 border-purple-300 text-purple-700" />
+        <IconButton onClick={goNext}  label="다음 카드"  icon="▶"   className="col-span-1 bg-gray-100" />
       </div>
 
       {celebrating && (
-        <CelebrationOverlay
-          message={celebrationMsg}
-          onDone={handleCelebrationDone}
-        />
+        <CelebrationOverlay message={celebrationMsg} onDone={handleCelebrationDone} />
       )}
     </div>
   );
