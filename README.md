@@ -75,19 +75,76 @@ npm run start
 
 ---
 
-## 이미지 교체 방법
+## 이미지 파일명 규칙
 
-`public/images/{카테고리}/{id}.png` 파일을 추가하면 자동으로 표시됩니다.
+### 기본 규칙
 
-| 카테고리 | 폴더 | 파일명 예시 |
-|---|---|---|
-| 과일 | `public/images/fruits/` | `apple.png`, `banana.png` ... |
-| 채소 | `public/images/vegetables/` | `carrot.png`, `tomato.png` ... |
-| 탈것 | `public/images/vehicles/` | `car.png`, `bus.png` ... |
+```
+public/images/{category-id}/{card-id}.png
+```
 
-이미지가 없으면 이모지가 자동으로 표시됩니다 (폴백 UI).
+- `{category-id}` : `fruits` / `vegetables` / `vehicles`
+- `{card-id}` : `src/data/cards.ts`의 `id` 필드와 **정확히 일치** (대소문자 구분)
+- 파일 확장자: `.png` (기본값, 코드가 이 경로를 직접 참조)
+- 이미지가 없으면 이모지가 자동으로 표시됩니다 (앱은 깨지지 않음)
 
-**권장 이미지 규격:** 400×400px 이상, PNG 또는 WebP, 투명 배경
+**권장 이미지 규격:** 400×400px 이상, 정사각형 비율, 투명 배경 PNG
+
+### 카드 ID 전체 목록
+
+#### 🍎 과일 — `public/images/fruits/`
+
+| 파일명 | 단어 |
+|---|---|
+| `apple.png` | 사과 |
+| `banana.png` | 바나나 |
+| `strawberry.png` | 딸기 |
+| `grape.png` | 포도 |
+| `watermelon.png` | 수박 |
+| `tangerine.png` | 귤 |
+| `peach.png` | 복숭아 |
+| `pineapple.png` | 파인애플 |
+
+#### 🥕 채소 — `public/images/vegetables/`
+
+| 파일명 | 단어 |
+|---|---|
+| `carrot.png` | 당근 |
+| `tomato.png` | 토마토 |
+| `cucumber.png` | 오이 |
+| `corn.png` | 옥수수 |
+| `onion.png` | 양파 |
+| `potato.png` | 감자 |
+| `broccoli.png` | 브로콜리 |
+| `cabbage.png` | 배추 |
+
+#### 🚗 탈것 — `public/images/vehicles/`
+
+| 파일명 | 단어 |
+|---|---|
+| `car.png` | 자동차 |
+| `bus.png` | 버스 |
+| `taxi.png` | 택시 |
+| `firetruck.png` | 소방차 |
+| `policecar.png` | 경찰차 |
+| `ambulance.png` | 구급차 |
+| `train.png` | 기차 |
+| `airplane.png` | 비행기 |
+| `helicopter.png` | 헬리콥터 |
+| `ship.png` | 배 |
+| `bicycle.png` | 자전거 |
+| `excavator.png` | 굴착기 |
+| `dumptruck.png` | 덤프트럭 |
+| `tractor.png` | 트랙터 |
+
+### WebP / JPG 포맷 사용 시
+
+`src/components/PlaceholderImage.tsx`의 `src` 경로 확장자를 변경하거나,
+`src/data/cards.ts`의 `imagePath` 필드를 직접 수정하세요:
+
+```ts
+{ id: 'apple', ..., imagePath: '/images/fruits/apple.webp' }
+```
 
 ---
 
@@ -116,22 +173,22 @@ npm run start
 
 ## Vercel 배포
 
-### 1. GitHub에 업로드
+### 1. GitHub 저장소
+
+- **URL**: https://github.com/parkjeonggeun/wordcard
+
+### 2. Vercel 배포
+
+- **Production URL**: https://wordcard-sigma.vercel.app
+- **Dashboard**: https://vercel.com/kaiser1225s-3603s-projects/wordcard
+
+이후 `main` 브랜치에 push할 때마다 자동으로 프로덕션 배포됩니다.
 
 ```bash
-git init
 git add .
-git commit -m "init: 낱말카드 PWA"
-git remote add origin https://github.com/YOUR_USERNAME/wordcard.git
-git push -u origin main
+git commit -m "..."
+git push
 ```
-
-### 2. Vercel 연결
-
-1. [vercel.com](https://vercel.com) 접속 → **Add New Project**
-2. GitHub 저장소 선택
-3. Framework: **Next.js** (자동 감지)
-4. **Deploy** 클릭
 
 환경변수가 필요한 경우 Vercel 대시보드 → Settings → Environment Variables에서 `.env.example` 항목을 참고해 추가합니다.
 
