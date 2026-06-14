@@ -23,7 +23,6 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
 
   const card = cards[index];
   const total = cards.length;
-  const nextCard = cards[(index + 1) % total];
 
   const goNext = useCallback(() => {
     cancel();
@@ -52,15 +51,8 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
     return () => { cancel(); };
   }, [index, cancel]);
 
-  useEffect(() => {
-    if (!nextCard) return;
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = nextCard.imagePath;
-    document.head.appendChild(link);
-    return () => { document.head.removeChild(link); };
-  }, [nextCard]);
+  // Raw image preload removed — large assets (e.g. multi-MB animal photos) would
+  // bypass Next.js optimisation and cause excessive mobile traffic on every card tap.
 
   return (
     <div className="flex flex-col h-full min-h-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>

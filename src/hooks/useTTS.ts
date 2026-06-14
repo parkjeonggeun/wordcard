@@ -4,13 +4,23 @@ import { useCallback, useRef, useState } from 'react';
 import { speakWithOnEnd, cancelTTS } from '@/utils/tts';
 import { speakEnglish, stopEnglishAudio } from '@/utils/elevenlabs';
 
+// Maximum time to wait for English TTS before unlocking buttons
+const EN_TIMEOUT_MS = 10_000;
+
+function speakEnglishWithTimeout(text: string): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, EN_TIMEOUT_MS);
+    speakEnglish(text)
+      .catch(() => speakWithOnEnd(text, 'en-US', resolve))
+      .finally(() => { clearTimeout(timer); resolve(); });
+  });
+}
+
 export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const cancelSeqRef = useRef<(() => void) | null>(null);
-  const speakingRef = useRef(false);
 
   const setSpeaking = useCallback((val: boolean) => {
-    speakingRef.current = val;
     setIsSpeaking(val);
   }, []);
 
@@ -24,9 +34,7 @@ export function useTTS() {
     if (lang === 'en-US') {
       stopEnglishAudio();
       cancelTTS();
-      speakEnglish(text)
-        .catch(() => new Promise<void>((res) => speakWithOnEnd(text, 'en-US', res)))
-        .finally(done);
+      speakEnglishWithTimeout(text).finally(done);
     } else {
       speakWithOnEnd(text, lang, done);
     }
@@ -41,18 +49,14 @@ export function useTTS() {
 
     const done = () => { if (!cancelled) setSpeaking(false); };
 
-    // Korean first with delay
     const koTimer = setTimeout(() => {
       if (cancelled) return;
       speakWithOnEnd(koText, 'ko-KR', () => {
         if (cancelled) return;
-        // English after Korean ends
         enTimer = setTimeout(() => {
           if (cancelled) return;
           stopEnglishAudio();
-          speakEnglish(enText)
-            .catch(() => new Promise<void>((res) => speakWithOnEnd(enText, 'en-US', res)))
-            .finally(done);
+          speakEnglishWithTimeout(enText).finally(done);
         }, 400);
       });
     }, initialDelayMs);

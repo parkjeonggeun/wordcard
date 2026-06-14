@@ -2,110 +2,129 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 
-// Pentatonic scale notes (Hz) — C4 based, gentle and pleasant
 const NOTES = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
-
-// Simple melody pattern indices into NOTES
 const MELODY = [0, 2, 4, 5, 4, 2, 0, 1, 2, 4, 7, 5, 4, 2, 3, 1];
 
 export function useAmbientMusic() {
+  // Monotonically increasing session counter — any closure that doesn't hold the current value is stale
+  const sessionRef = useRef(0);
   const ctxRef = useRef<AudioContext | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const melodyIdxRef = useRef(0);
-  const isPlayingRef = useRef(false);
 
-  const playNote = useCallback((freq: number, when: number, duration: number) => {
+  const clearTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const scheduleNote = useCallback((session: number) => {
+    if (sessionRef.current !== session) return;
     const ctx = ctxRef.current;
     const masterGain = gainRef.current;
     if (!ctx || !masterGain) return;
-
-    const osc = ctx.createOscillator();
-    const env = ctx.createGain();
-
-    osc.connect(env);
-    env.connect(masterGain);
-
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-
-    // Soft attack + decay envelope
-    env.gain.setValueAtTime(0, when);
-    env.gain.linearRampToValueAtTime(0.4, when + 0.08);
-    env.gain.exponentialRampToValueAtTime(0.001, when + duration);
-
-    osc.start(when);
-    osc.stop(when + duration + 0.05);
-  }, []);
-
-  const scheduleNext = useCallback(() => {
-    if (!isPlayingRef.current) return;
-    const ctx = ctxRef.current;
-    if (!ctx) return;
 
     const noteIdx = MELODY[melodyIdxRef.current % MELODY.length];
     const freq = NOTES[noteIdx];
     const now = ctx.currentTime;
 
-    // Alternate between melody note and a soft bass note an octave down
-    playNote(freq, now, 1.2);
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.connect(env);
+    env.connect(masterGain);
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    env.gain.setValueAtTime(0, now);
+    env.gain.linearRampToValueAtTime(0.4, now + 0.08);
+    env.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    osc.start(now);
+    osc.stop(now + 1.3);
+
     if (melodyIdxRef.current % 4 === 0) {
-      playNote(NOTES[0] / 2, now, 2.0); // bass drone
+      const bass = ctx.createOscillator();
+      const bassEnv = ctx.createGain();
+      bass.connect(bassEnv);
+      bassEnv.connect(masterGain);
+      bass.type = 'sine';
+      bass.frequency.value = NOTES[0] / 2;
+      bassEnv.gain.setValueAtTime(0, now);
+      bassEnv.gain.linearRampToValueAtTime(0.2, now + 0.1);
+      bassEnv.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+      bass.start(now);
+      bass.stop(now + 2.1);
     }
 
     melodyIdxRef.current++;
-
-    // Each note lasts ~1.5s with slight variation
-    const nextDelay = 1400 + Math.random() * 300;
-    timerRef.current = setTimeout(scheduleNext, nextDelay);
-  }, [playNote]);
+    const delay = 1400 + Math.random() * 300;
+    timerRef.current = setTimeout(() => scheduleNote(session), delay);
+  }, []);
 
   const start = useCallback(() => {
-    if (isPlayingRef.current) return;
     if (typeof window === 'undefined') return;
+
+    // Invalidate any prior session
+    sessionRef.current += 1;
+    const session = sessionRef.current;
+
+    // Close any existing context
+    clearTimer();
+    const oldCtx = ctxRef.current;
+    ctxRef.current = null;
+    gainRef.current = null;
+    if (oldCtx) oldCtx.close().catch(() => {});
 
     try {
       const ctx = new AudioContext();
-      ctxRef.current = ctx;
-
       const masterGain = ctx.createGain();
-      masterGain.gain.value = 0.18; // quiet background level
+      masterGain.gain.value = 0.18;
       masterGain.connect(ctx.destination);
+
+      ctxRef.current = ctx;
       gainRef.current = masterGain;
 
       ctx.resume().then(() => {
-        isPlayingRef.current = true;
-        scheduleNext();
-      });
+        // Only proceed if this session is still the active one
+        if (sessionRef.current !== session) {
+          ctx.close().catch(() => {});
+          return;
+        }
+        scheduleNote(session);
+      }).catch(() => {});
     } catch {
       // Audio not available — fail silently
     }
-  }, [scheduleNext]);
+  }, [clearTimer, scheduleNote]);
 
   const stop = useCallback(() => {
-    isPlayingRef.current = false;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    try {
-      gainRef.current?.gain.setValueAtTime(gainRef.current.gain.value, ctxRef.current?.currentTime ?? 0);
-      gainRef.current?.gain.linearRampToValueAtTime(0, (ctxRef.current?.currentTime ?? 0) + 0.5);
-      setTimeout(() => {
-        ctxRef.current?.close().catch(() => {});
-        ctxRef.current = null;
-        gainRef.current = null;
-      }, 600);
-    } catch {
-      ctxRef.current = null;
-      gainRef.current = null;
+    // Invalidate current session so any pending callbacks no-op
+    sessionRef.current += 1;
+    clearTimer();
+
+    const ctx = ctxRef.current;
+    const gain = gainRef.current;
+    ctxRef.current = null;
+    gainRef.current = null;
+
+    if (ctx && gain) {
+      try {
+        gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+        setTimeout(() => ctx.close().catch(() => {}), 500);
+      } catch {
+        ctx.close().catch(() => {});
+      }
     }
-  }, []);
+  }, [clearTimer]);
 
   useEffect(() => {
     return () => {
-      isPlayingRef.current = false;
-      if (timerRef.current) clearTimeout(timerRef.current);
+      sessionRef.current += 1;
+      clearTimer();
       ctxRef.current?.close().catch(() => {});
     };
-  }, []);
+  }, [clearTimer]);
 
   return { start, stop };
 }
