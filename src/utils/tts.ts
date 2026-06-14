@@ -151,3 +151,21 @@ export function cancelTTS(): void {
     window.speechSynthesis.cancel();
   }
 }
+
+export function speakWithOnEnd(text: string, lang: TTSLang, onEnd: () => void): void {
+  if (typeof window === 'undefined' || !window.speechSynthesis) { onEnd(); return; }
+  window.speechSynthesis.cancel();
+  const u = makeUtterance(text, lang);
+  u.onend = onEnd;
+  u.onerror = onEnd;
+  try {
+    window.speechSynthesis.speak(u);
+  } catch {
+    setTimeout(() => {
+      const u2 = makeUtterance(text, lang);
+      u2.onend = onEnd;
+      u2.onerror = onEnd;
+      window.speechSynthesis.speak(u2);
+    }, 80);
+  }
+}

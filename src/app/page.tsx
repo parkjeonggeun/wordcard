@@ -1,12 +1,14 @@
 import CategoryCard from '@/components/CategoryCard';
+import AmbientMusicButton from '@/components/AmbientMusicButton';
 import { categories } from '@/data/cards';
 
 export default function Home() {
   return (
     <main
-      className="h-dvh flex flex-col items-center px-4 py-4 pt-safe pb-safe overflow-hidden"
+      className="relative h-dvh flex flex-col items-center px-4 py-4 pt-safe pb-safe overflow-hidden"
       style={{ background: 'linear-gradient(160deg, #FFF9F0 0%, #FFF4E6 50%, #FFEEDD 100%)' }}
     >
+      <AmbientMusicButton />
       <div className="w-full max-w-2xl flex flex-col h-full">
         {/* App header */}
         <div className="text-center mb-3 flex-shrink-0">

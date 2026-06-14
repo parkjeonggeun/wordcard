@@ -18,7 +18,7 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
   const [celebrating, setCelebrating] = useState(false);
   const [celebrationMsg, setCelebrationMsg] = useState('');
   const celebratingRef = useRef(false);
-  const { speak, speakSequence, cancel } = useTTS();
+  const { speak, speakSequence, cancel, isSpeaking } = useTTS();
   const theme = getTheme(category.id);
 
   const card = cards[index];
@@ -36,12 +36,12 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
   }, [cancel, total]);
 
   const handleCorrect = useCallback(() => {
-    if (celebratingRef.current) return;
+    if (celebratingRef.current || isSpeaking) return;
     celebratingRef.current = true;
     setCelebrationMsg(getRandomMessage());
     setCelebrating(true);
     speakSequence(card.nameKo, card.nameEn, 600);
-  }, [card, speakSequence]);
+  }, [card, speakSequence, isSpeaking]);
 
   const handleCelebrationDone = useCallback(() => {
     celebratingRef.current = false;
@@ -75,7 +75,7 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
           type="button"
           onClick={onHome}
           aria-label="홈으로"
-          className="w-14 h-14 rounded-full flex items-center justify-center text-2xl transition-transform duration-75 active:scale-90 touch-manipulation select-none"
+          className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-transform duration-75 active:scale-90 touch-manipulation select-none"
           style={{
             background: 'rgba(255,255,255,0.92)',
             boxShadow: '0 4px 0 rgba(0,0,0,0.10), 0 6px 16px rgba(0,0,0,0.06)',
@@ -93,7 +93,7 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
 
         {/* Counter badge */}
         <div
-          className="w-14 h-14 rounded-full flex items-center justify-center font-black select-none"
+          className="w-16 h-16 rounded-full flex items-center justify-center font-black select-none"
           style={{
             background: 'rgba(255,255,255,0.75)',
             color: theme.dark,
@@ -133,7 +133,7 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
         </div>
       </div>
 
-      {/* Image card — white card with soft shadow */}
+      {/* Image card */}
       <div className="flex-1 min-h-0 px-5 pb-3">
         <div
           className="w-full h-full rounded-[28px] overflow-hidden"
@@ -169,18 +169,18 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
       </div>
 
       {/* Control buttons */}
-      <div className="px-4 pb-5 shrink-0 flex items-center justify-center gap-2">
+      <div className="px-4 pb-5 shrink-0 flex items-center justify-center gap-3">
 
         {/* Previous */}
         <button
           type="button"
           onClick={goPrev}
           aria-label="이전 카드"
-          className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-transform duration-75 active:scale-90 touch-manipulation select-none font-black"
+          className="w-20 h-20 rounded-full flex items-center justify-center text-3xl transition-transform duration-75 active:scale-90 touch-manipulation select-none font-black"
           style={{
             background: 'white',
             color: '#9090A8',
-            boxShadow: '0 4px 0 #B8BCC8, 0 6px 16px rgba(0,0,0,0.08)',
+            boxShadow: '0 5px 0 #B8BCC8, 0 8px 20px rgba(0,0,0,0.10)',
           }}
         >
           ◀
@@ -191,34 +191,44 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
           type="button"
           onClick={() => speak(card.nameKo, 'ko-KR')}
           aria-label="한국어 듣기"
-          className="flex flex-col items-center justify-center h-16 px-4 rounded-2xl font-black transition-transform duration-75 active:scale-90 touch-manipulation select-none"
+          disabled={isSpeaking}
+          className="flex flex-col items-center justify-center h-20 px-5 rounded-2xl font-black transition-all duration-75 touch-manipulation select-none"
           style={{
-            background: '#FFE4DC',
+            background: isSpeaking ? '#F5C5BA' : '#FFE4DC',
             color: theme.dark,
-            boxShadow: `0 4px 0 ${theme.shadow}AA, 0 6px 16px rgba(200,100,80,0.14)`,
-            minWidth: '3.8rem',
-            fontSize: 'clamp(10px, 2.2vw, 14px)',
+            boxShadow: isSpeaking
+              ? 'none'
+              : `0 5px 0 ${theme.shadow}AA, 0 8px 20px rgba(200,100,80,0.14)`,
+            minWidth: '4.5rem',
+            fontSize: 'clamp(11px, 2.5vw, 15px)',
+            opacity: isSpeaking ? 0.6 : 1,
+            transform: isSpeaking ? 'translateY(3px)' : undefined,
           }}
         >
-          <span className="text-xl mb-0.5">🔊</span>
+          <span className="text-2xl mb-1">🔊</span>
           <span>한국어</span>
         </button>
 
-        {/* Correct / Star — biggest button */}
+        {/* Correct / Star */}
         <button
           type="button"
           onClick={handleCorrect}
           aria-label="정답"
-          className="flex flex-col items-center justify-center h-16 px-5 rounded-2xl font-black transition-transform duration-75 active:scale-90 touch-manipulation select-none"
+          disabled={isSpeaking || celebrating}
+          className="flex flex-col items-center justify-center h-20 px-6 rounded-2xl font-black transition-all duration-75 touch-manipulation select-none"
           style={{
-            background: '#FFE566',
+            background: isSpeaking || celebrating ? '#E8D040' : '#FFE566',
             color: '#6A4800',
-            boxShadow: '0 5px 0 #C8A010, 0 8px 22px rgba(200,160,16,0.28)',
-            minWidth: '4.5rem',
-            fontSize: 'clamp(10px, 2.2vw, 14px)',
+            boxShadow: isSpeaking || celebrating
+              ? 'none'
+              : '0 6px 0 #C8A010, 0 10px 26px rgba(200,160,16,0.28)',
+            minWidth: '5rem',
+            fontSize: 'clamp(11px, 2.5vw, 15px)',
+            opacity: isSpeaking || celebrating ? 0.6 : 1,
+            transform: isSpeaking || celebrating ? 'translateY(4px)' : undefined,
           }}
         >
-          <span className="text-2xl mb-0.5">⭐</span>
+          <span className="text-3xl mb-1">⭐</span>
           <span>정답!</span>
         </button>
 
@@ -227,16 +237,21 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
           type="button"
           onClick={() => speak(card.nameEn, 'en-US')}
           aria-label="영어 듣기"
-          className="flex flex-col items-center justify-center h-16 px-4 rounded-2xl font-black transition-transform duration-75 active:scale-90 touch-manipulation select-none"
+          disabled={isSpeaking}
+          className="flex flex-col items-center justify-center h-20 px-5 rounded-2xl font-black transition-all duration-75 touch-manipulation select-none"
           style={{
-            background: '#E8E0FF',
+            background: isSpeaking ? '#CEC8F0' : '#E8E0FF',
             color: '#38208A',
-            boxShadow: '0 4px 0 #9080C8AA, 0 6px 16px rgba(140,120,200,0.14)',
-            minWidth: '3.8rem',
-            fontSize: 'clamp(10px, 2.2vw, 14px)',
+            boxShadow: isSpeaking
+              ? 'none'
+              : '0 5px 0 #9080C8AA, 0 8px 20px rgba(140,120,200,0.14)',
+            minWidth: '4.5rem',
+            fontSize: 'clamp(11px, 2.5vw, 15px)',
+            opacity: isSpeaking ? 0.6 : 1,
+            transform: isSpeaking ? 'translateY(3px)' : undefined,
           }}
         >
-          <span className="text-xl mb-0.5">🔊</span>
+          <span className="text-2xl mb-1">🔊</span>
           <span>English</span>
         </button>
 
@@ -245,11 +260,11 @@ function WordCard({ cards, category, onHome }: WordCardProps) {
           type="button"
           onClick={goNext}
           aria-label="다음 카드"
-          className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-transform duration-75 active:scale-90 touch-manipulation select-none font-black"
+          className="w-20 h-20 rounded-full flex items-center justify-center text-3xl transition-transform duration-75 active:scale-90 touch-manipulation select-none font-black"
           style={{
             background: 'white',
             color: '#9090A8',
-            boxShadow: '0 4px 0 #B8BCC8, 0 6px 16px rgba(0,0,0,0.08)',
+            boxShadow: '0 5px 0 #B8BCC8, 0 8px 20px rgba(0,0,0,0.10)',
           }}
         >
           ▶
